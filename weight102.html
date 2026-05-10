@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Wisey · Weight</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg: #000000;
+      --card-bg: #0a0a0f;
+      --card-border: rgba(110, 231, 183, 0.10);
+      --mint: #6ee7b7;
+      --mint-dim: rgba(110, 231, 183, 0.45);
+      --amber: #fbbf24;
+      --red: #f87171;
+      --text: #ffffff;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 60px 20px 60px;
+    }
+
+    .home-divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .home-divider::before,
+    .home-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.10);
+    }
+    .home-divider span {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 500;
+    }
+
+    .weight-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 24px 22px 22px;
+    }
+    .weight-label {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      color: rgba(255, 255, 255, 0.55);
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .weight-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .weight-num {
+      font-size: 56px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .weight-unit {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: 400;
+    }
+    .weight-delta {
+      color: var(--amber);
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .weight-streak {
+      color: var(--mint);
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 22px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .weight-chart-wrap {
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .weight-chart-yaxis {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+    .weight-chart-yaxis span {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.35);
+    }
+    .weight-chart {
+      height: 130px;
+      display: block;
+      margin-left: 36px;
+      width: calc(100% - 36px);
+    }
+    .weight-grid-line { stroke: rgba(255, 255, 255, 0.05); stroke-width: 1; }
+    .weight-area { fill: url(#weightFill); }
+    .weight-line {
+      fill: none;
+      stroke: var(--mint);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .weight-avg-line {
+      fill: none;
+      stroke: var(--mint-dim);
+      stroke-width: 1.5;
+      stroke-dasharray: 4 3;
+      opacity: 0.6;
+    }
+    .weight-dot {
+      fill: var(--mint);
+      stroke: #0a0a0f;
+      stroke-width: 1.5;
+    }
+    .weight-dot-today {
+      fill: #ffffff;
+      stroke: var(--mint);
+      stroke-width: 2;
+      filter: url(#weightTodayGlow);
+    }
+    .chart-meta {
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.45);
+      margin-top: 8px;
+    }
+    .chart-legend {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 12px;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: rgba(255, 255, 255, 0.55);
+      font-weight: 500;
+    }
+    .legend-dot {
+      width: 14px;
+      height: 2px;
+      background: var(--mint);
+      border-radius: 1px;
+    }
+    .legend-dot-avg {
+      background: transparent;
+      border-top: 2px dashed var(--mint-dim);
+      height: 2px;
+    }
+
+    .weight-locked {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(110, 231, 183, 0.04);
+      border: 1px solid rgba(110, 231, 183, 0.16);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-top: 18px;
+    }
+    .weight-locked-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .weight-locked-check {
+      width: 32px;
+      height: 32px;
+      background: rgba(110, 231, 183, 0.12);
+      color: var(--mint);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+    .weight-locked-label {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: rgba(255, 255, 255, 0.5);
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+    .weight-locked-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .weight-edit-btn {
+      background: transparent;
+      border: none;
+      color: var(--mint);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 8px 12px;
+    }
+
+    .weight-input-row { margin-top: 18px; }
+    .weight-input-top {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .weight-input {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 500;
+      padding: 12px 14px;
+      width: 100%;
+      outline: none;
+    }
+    .weight-input:focus { border-color: rgba(110, 231, 183, 0.4); }
+    .weight-unit-static {
+      color: rgba(255, 255, 255, 0.45);
+      font-size: 14px;
+    }
+    .weight-save-btn {
+      background: var(--mint);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .weight-note-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 12px 14px;
+      outline: none;
+    }
+    .weight-note-input::placeholder { color: rgba(255, 255, 255, 0.3); }
+
+    .hidden { display: none !important; }
+
+    .progress-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 20px 22px;
+      color: var(--text);
+      margin-top: 18px;
+      transition: border-color 200ms, transform 150ms;
+      cursor: pointer;
+      width: 100%;
+      font-family: inherit;
+      text-align: left;
+    }
+    .progress-link:hover { border-color: rgba(110, 231, 183, 0.25); }
+    .progress-link:active { transform: scale(0.99); }
+    .progress-link-label {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      color: rgba(255, 255, 255, 0.55);
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .progress-link-count {
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .progress-link-arrow {
+      color: var(--mint);
+      font-size: 22px;
+    }
+
+    /* Progress overlay */
+    .progress-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .progress-overlay.is-open { transform: translateY(0); }
+    .progress-inner {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+    }
+    .progress-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .progress-back {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 50%;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+    }
+    .progress-back:hover { background: rgba(255, 255, 255, 0.08); }
+    .progress-title {
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .progress-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .progress-action {
+      height: 56px;
+      border-radius: 14px;
+      border: none;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 150ms;
+    }
+    .progress-action:active { transform: scale(0.98); }
+    .progress-action-primary {
+      background: var(--mint);
+      color: #000;
+    }
+    .progress-action-secondary {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      color: var(--text);
+    }
+    .progress-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 380px) {
+      .progress-grid { grid-template-columns: 1fr; }
+    }
+    .progress-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 14px;
+    }
+    .progress-photo-card {
+      position: relative;
+      aspect-ratio: 3 / 4;
+      border-radius: 14px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1a24 0%, #0a0f0a 50%, #051208 100%);
+      cursor: pointer;
+      border: 1px solid rgba(110, 231, 183, 0.08);
+      transition: transform 150ms, opacity 250ms;
+      font-family: inherit;
+      padding: 0;
+    }
+    .progress-photo-card:active { transform: scale(0.98); }
+    .progress-photo-card.is-removing {
+      opacity: 0;
+      transform: scale(0.92);
+      pointer-events: none;
+    }
+    .progress-photo-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .progress-photo-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.18;
+    }
+    .progress-photo-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.7) 100%);
+      pointer-events: none;
+    }
+    .progress-photo-meta {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .photo-date { color: var(--mint); }
+    .photo-weight { color: var(--text); }
+
+    /* Photo viewer */
+    .photo-viewer {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.96);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .photo-viewer.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .photo-viewer-eyebrow {
+      text-align: center;
+      padding: 24px 20px 12px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+    .photo-viewer-stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+    }
+    .photo-viewer-frame {
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 3 / 4;
+      border-radius: 18px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1a24 0%, #0a0f0a 50%, #051208 100%);
+      border: 1px solid rgba(110, 231, 183, 0.10);
+      position: relative;
+    }
+    .photo-viewer-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .photo-viewer-meta {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px 24px 12px;
+      width: 100%;
+    }
+    .photo-viewer-date {
+      color: var(--mint);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .photo-viewer-weight {
+      color: var(--text);
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .photo-viewer-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      padding: 8px 12px 24px;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .photo-viewer-btn {
+      background: transparent;
+      border: none;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      padding: 16px 12px;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: background 150ms;
+    }
+    .photo-viewer-btn:active { background: rgba(255, 255, 255, 0.06); }
+    .pv-compare { color: var(--mint); }
+    .pv-close { color: var(--text); }
+    .pv-delete { color: var(--red); }
+    .pv-delete.is-confirm { background: rgba(248, 113, 113, 0.10); }
+
+    /* Compare modal */
+    .compare-view {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.98);
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .compare-view.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .compare-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 20px 16px;
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .compare-title {
+      font-size: 13px;
+      letter-spacing: 0.22em;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+    }
+    .compare-close {
+      background: transparent;
+      border: none;
+      color: var(--mint);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .compare-stage {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 8px 16px 16px;
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+      align-items: center;
+    }
+    .compare-slot {
+      aspect-ratio: 3 / 4;
+      border-radius: 14px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1a24 0%, #0a0f0a 50%, #051208 100%);
+      border: 1px solid rgba(110, 231, 183, 0.10);
+      position: relative;
+    }
+    .compare-slot img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .compare-slot-meta {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      font-weight: 500;
+      background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.7));
+    }
+    .compare-slot-date {
+      color: var(--mint);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      margin-bottom: 2px;
+    }
+    .compare-slot-weight {
+      color: var(--text);
+      font-size: 16px;
+    }
+    .compare-picker {
+      padding: 20px;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+      text-align: center;
+    }
+    .compare-picker-label {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 14px;
+    }
+    .compare-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+      gap: 8px;
+    }
+    .compare-picker-thumb {
+      aspect-ratio: 3 / 4;
+      border-radius: 10px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1a24, #0a0f0a);
+      border: 1px solid rgba(110, 231, 183, 0.10);
+      cursor: pointer;
+      position: relative;
+      padding: 0;
+      font-family: inherit;
+    }
+    .compare-picker-thumb img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .compare-picker-thumb-date {
+      position: absolute;
+      bottom: 4px;
+      left: 6px;
+      right: 6px;
+      font-size: 10px;
+      color: var(--mint);
+      font-weight: 500;
+      background: rgba(0,0,0,0.5);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(255, 255, 255, 0.10);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: var(--text);
+      padding: 14px 22px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 400;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms ease, transform 200ms ease;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+    .toast.is-visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .home-divider, .weight-card, .progress-link {
+      animation: fadeUp 600ms ease-out backwards;
+    }
+    .weight-card { animation-delay: 80ms; }
+    .progress-link { animation-delay: 160ms; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="home-divider"><span>WEIGHT</span></div>
+
+  <div class="weight-card">
+    <div class="weight-label">WEIGHT</div>
+    <div class="weight-row">
+      <span class="weight-num">162.2</span>
+      <span class="weight-unit">lbs</span>
+    </div>
+    <div class="weight-delta">↑ +0.4 lbs · last 7d</div>
+    <div class="weight-streak">🔥<span>2 day streak</span></div>
+
+    <div class="weight-chart-wrap">
+      <div class="weight-chart-yaxis">
+        <span>163.4</span>
+        <span>159.0</span>
+      </div>
+      <svg class="weight-chart" viewBox="0 0 320 130" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#6ee7b7" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#6ee7b7" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="weightTodayGlow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="weightLineGlow">
+            <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        <line class="weight-grid-line" x1="0" y1="20" x2="320" y2="20"></line>
+        <line class="weight-grid-line" x1="0" y1="65" x2="320" y2="65"></line>
+        <line class="weight-grid-line" x1="0" y1="110" x2="320" y2="110"></line>
+
+        <path class="weight-avg-line" d="M 8 78 Q 32 76, 56 74 T 104 70 T 152 68 T 200 64 T 248 58 T 296 52 T 312 48"></path>
+
+        <path class="weight-area" d="M 8 60 Q 16 35, 24 28 T 40 95 T 56 100 T 72 70 T 88 78 T 104 60 T 120 65 T 136 50 T 152 70 T 168 60 T 184 55 T 200 60 T 216 50 T 232 55 T 248 48 T 264 52 T 280 48 T 296 50 L 312 45 L 312 130 L 8 130 Z"></path>
+
+        <path class="weight-line" filter="url(#weightLineGlow)" d="M 8 60 Q 16 35, 24 28 T 40 95 T 56 100 T 72 70 T 88 78 T 104 60 T 120 65 T 136 50 T 152 70 T 168 60 T 184 55 T 200 60 T 216 50 T 232 55 T 248 48 T 264 52 T 280 48 T 296 50 L 312 45"></path>
+
+        <circle class="weight-dot" cx="8" cy="60" r="3"/>
+        <circle class="weight-dot" cx="24" cy="28" r="3"/>
+        <circle class="weight-dot" cx="40" cy="95" r="3"/>
+        <circle class="weight-dot" cx="56" cy="100" r="3"/>
+        <circle class="weight-dot" cx="72" cy="70" r="3"/>
+        <circle class="weight-dot" cx="88" cy="78" r="3"/>
+        <circle class="weight-dot" cx="104" cy="60" r="3"/>
+        <circle class="weight-dot" cx="120" cy="65" r="3"/>
+        <circle class="weight-dot" cx="136" cy="50" r="3"/>
+        <circle class="weight-dot" cx="152" cy="70" r="3"/>
+        <circle class="weight-dot" cx="168" cy="60" r="3"/>
+        <circle class="weight-dot" cx="184" cy="55" r="3"/>
+        <circle class="weight-dot" cx="200" cy="60" r="3"/>
+        <circle class="weight-dot" cx="216" cy="50" r="3"/>
+        <circle class="weight-dot" cx="232" cy="55" r="3"/>
+        <circle class="weight-dot" cx="248" cy="48" r="3"/>
+        <circle class="weight-dot" cx="264" cy="52" r="3"/>
+        <circle class="weight-dot" cx="280" cy="48" r="3"/>
+        <circle class="weight-dot" cx="296" cy="50" r="3"/>
+
+        <circle class="weight-dot-today" cx="312" cy="45" r="5"/>
+      </svg>
+      <div class="chart-meta">18 entries · last 30 days</div>
+    </div>
+
+    <div class="chart-legend">
+      <span class="legend-item"><span class="legend-dot"></span>DAILY</span>
+      <span class="legend-item"><span class="legend-dot legend-dot-avg"></span>7-DAY AVG</span>
+    </div>
+
+    <div class="weight-locked" id="weightLocked">
+      <div class="weight-locked-info">
+        <span class="weight-locked-check">✓</span>
+        <div>
+          <div class="weight-locked-label">LOGGED TODAY</div>
+          <div class="weight-locked-value">162.2 lbs</div>
+        </div>
+      </div>
+      <button class="weight-edit-btn" id="weightEditBtn">Edit</button>
+    </div>
+
+    <div class="weight-input-row hidden" id="weightInputRow">
+      <div class="weight-input-top">
+        <input type="number" step="0.1" class="weight-input" id="weightInput" value="162.2" inputmode="decimal" aria-label="Today's weight in pounds"/>
+        <span class="weight-unit-static">lbs</span>
+        <button class="weight-save-btn" id="weightSaveBtn">Save</button>
+      </div>
+      <input type="text" class="weight-note-input" placeholder="Note (optional) — e.g. carb refeed, post-flu" maxlength="80"/>
+    </div>
+  </div>
+
+  <button class="progress-link" id="progressLink" aria-label="Open progress photos">
+    <div>
+      <div class="progress-link-label">PROGRESS PHOTOS</div>
+      <div class="progress-link-count" id="progressLinkCount">1 photo · latest May 8</div>
+    </div>
+    <span class="progress-link-arrow">→</span>
+  </button>
+
+  <!-- Progress overlay -->
+  <div class="progress-overlay" id="progressOverlay" aria-hidden="true">
+    <div class="progress-inner">
+      <div class="progress-header">
+        <button class="progress-back" id="progressBack" aria-label="Back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div class="progress-title">Progress</div>
+      </div>
+
+      <div class="progress-actions">
+        <button class="progress-action progress-action-primary" id="takePhotoBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          Take Photo
+        </button>
+        <button class="progress-action progress-action-secondary" id="fromLibraryBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          From Library
+        </button>
+      </div>
+
+      <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none"/>
+      <input type="file" accept="image/*" id="libraryInput" style="display:none"/>
+
+      <div class="progress-grid" id="progressGrid">
+        <button class="progress-photo-card" data-photo-id="seed" aria-label="Open photo">
+          <div class="progress-photo-placeholder">
+            <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none" stroke="#6ee7b7" stroke-width="0.6">
+              <circle cx="50" cy="32" r="11"/>
+              <path d="M30 88 C 30 64, 40 50, 50 50 C 60 50, 70 64, 70 88"/>
+            </svg>
+          </div>
+          <div class="progress-photo-overlay"></div>
+          <div class="progress-photo-meta">
+            <span class="photo-date">May 8</span>
+            <span class="photo-weight">162.3 lbs</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo viewer -->
+  <div class="photo-viewer" id="photoViewer" aria-hidden="true">
+    <div class="photo-viewer-eyebrow">Wisey · Progress</div>
+    <div class="photo-viewer-stage" id="photoViewerStage">
+      <div class="photo-viewer-frame" id="photoViewerFrame">
+        <div class="progress-photo-placeholder" id="photoViewerPlaceholder" style="opacity: 0.22;">
+          <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none" stroke="#6ee7b7" stroke-width="0.6">
+            <circle cx="50" cy="32" r="11"/>
+            <path d="M30 88 C 30 64, 40 50, 50 50 C 60 50, 70 64, 70 88"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="photo-viewer-meta">
+      <div class="photo-viewer-date" id="photoViewerDate">MAY 8</div>
+      <div class="photo-viewer-weight" id="photoViewerWeight">162.3 lbs</div>
+    </div>
+    <div class="photo-viewer-actions">
+      <button class="photo-viewer-btn pv-compare" id="pvCompare">Compare</button>
+      <button class="photo-viewer-btn pv-close" id="pvClose">Close</button>
+      <button class="photo-viewer-btn pv-delete" id="pvDelete">Delete</button>
+    </div>
+  </div>
+
+  <!-- Compare view -->
+  <div class="compare-view" id="compareView" aria-hidden="true">
+    <div class="compare-header">
+      <div class="compare-title">COMPARE</div>
+      <button class="compare-close" id="compareClose">Done</button>
+    </div>
+    <div class="compare-stage">
+      <div class="compare-slot" id="compareSlotA">
+        <div class="progress-photo-placeholder" style="opacity: 0.18;">
+          <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none" stroke="#6ee7b7" stroke-width="0.6">
+            <circle cx="50" cy="32" r="11"/>
+            <path d="M30 88 C 30 64, 40 50, 50 50 C 60 50, 70 64, 70 88"/>
+          </svg>
+        </div>
+        <div class="compare-slot-meta">
+          <div class="compare-slot-date" id="compareSlotADate">MAY 8</div>
+          <div class="compare-slot-weight" id="compareSlotAWeight">162.3 lbs</div>
+        </div>
+      </div>
+      <div class="compare-slot" id="compareSlotB">
+        <div class="progress-photo-placeholder" style="opacity: 0.18;">
+          <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none" stroke="#6ee7b7" stroke-width="0.6">
+            <circle cx="50" cy="32" r="11"/>
+            <path d="M30 88 C 30 64, 40 50, 50 50 C 60 50, 70 64, 70 88"/>
+          </svg>
+        </div>
+        <div class="compare-slot-meta">
+          <div class="compare-slot-date" id="compareSlotBDate">—</div>
+          <div class="compare-slot-weight" id="compareSlotBWeight">Pick photo</div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-picker" id="comparePicker">
+      <div class="compare-picker-label">Choose a photo to compare with</div>
+      <div class="compare-picker-grid" id="comparePickerGrid"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // -------------------- State --------------------
+    // Each photo: { id, date, dateUpper, weight, dataUrl (null for seed) }
+    const photos = [
+      { id: 'seed', date: 'May 8', dateUpper: 'MAY 8', weight: '162.3 lbs', dataUrl: null }
+    ];
+    let nextId = 1;
+    let currentPhotoId = null; // id currently in the viewer
+
+    // -------------------- Refs --------------------
+    const editBtn = document.getElementById('weightEditBtn');
+    const saveBtn = document.getElementById('weightSaveBtn');
+    const lockedState = document.getElementById('weightLocked');
+    const inputRow = document.getElementById('weightInputRow');
+    const weightInput = document.getElementById('weightInput');
+    const weightNumEl = document.querySelector('.weight-num');
+    const weightLockedValueEl = document.querySelector('.weight-locked-value');
+
+    const progressLink = document.getElementById('progressLink');
+    const progressOverlay = document.getElementById('progressOverlay');
+    const progressBack = document.getElementById('progressBack');
+    const progressLinkCount = document.getElementById('progressLinkCount');
+    const progressGrid = document.getElementById('progressGrid');
+
+    const takePhotoBtn = document.getElementById('takePhotoBtn');
+    const fromLibraryBtn = document.getElementById('fromLibraryBtn');
+    const cameraInput = document.getElementById('cameraInput');
+    const libraryInput = document.getElementById('libraryInput');
+
+    const photoViewer = document.getElementById('photoViewer');
+    const photoViewerFrame = document.getElementById('photoViewerFrame');
+    const photoViewerPlaceholder = document.getElementById('photoViewerPlaceholder');
+    const photoViewerDate = document.getElementById('photoViewerDate');
+    const photoViewerWeight = document.getElementById('photoViewerWeight');
+    const pvCompare = document.getElementById('pvCompare');
+    const pvClose = document.getElementById('pvClose');
+    const pvDelete = document.getElementById('pvDelete');
+
+    const compareView = document.getElementById('compareView');
+    const compareClose = document.getElementById('compareClose');
+    const compareSlotA = document.getElementById('compareSlotA');
+    const compareSlotADate = document.getElementById('compareSlotADate');
+    const compareSlotAWeight = document.getElementById('compareSlotAWeight');
+    const compareSlotB = document.getElementById('compareSlotB');
+    const compareSlotBDate = document.getElementById('compareSlotBDate');
+    const compareSlotBWeight = document.getElementById('compareSlotBWeight');
+    const comparePicker = document.getElementById('comparePicker');
+    const comparePickerGrid = document.getElementById('comparePickerGrid');
+
+    const toastEl = document.getElementById('toast');
+
+    let deleteConfirm = false;
+    let deleteConfirmTimeout = null;
+
+    // -------------------- Helpers --------------------
+    function formatToday() {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const d = new Date();
+      const short = `${months[d.getMonth()]} ${d.getDate()}`;
+      const upper = `${months[d.getMonth()].toUpperCase()} ${d.getDate()}`;
+      return { short, upper };
+    }
+
+    function getCurrentWeight() {
+      return `${weightNumEl.textContent} lbs`;
+    }
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('is-visible');
+      setTimeout(() => toastEl.classList.remove('is-visible'), 1800);
+    }
+
+    function getPhoto(id) {
+      return photos.find(p => String(p.id) === String(id));
+    }
+
+    function renderPhotoMedia(container, photo, withPlaceholder = true) {
+      // clear children
+      container.innerHTML = '';
+      if (photo && photo.dataUrl) {
+        const img = document.createElement('img');
+        img.className = container === photoViewerFrame ? 'photo-viewer-img' : 'progress-photo-img';
+        img.src = photo.dataUrl;
+        img.alt = 'Progress photo';
+        container.appendChild(img);
+      } else if (withPlaceholder) {
+        const ph = document.createElement('div');
+        ph.className = 'progress-photo-placeholder';
+        if (container === photoViewerFrame) ph.style.opacity = '0.22';
+        ph.innerHTML = `
+          <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none" stroke="#6ee7b7" stroke-width="0.6">
+            <circle cx="50" cy="32" r="11"/>
+            <path d="M30 88 C 30 64, 40 50, 50 50 C 60 50, 70 64, 70 88"/>
+          </svg>
+        `;
+        container.appendChild(ph);
+      }
+    }
+
+    function buildPhotoCard(photo) {
+      const card = document.createElement('button');
+      card.className = 'progress-photo-card';
+      card.setAttribute('aria-label', 'Open photo');
+      card.dataset.photoId = photo.id;
+
+      if (photo.dataUrl) {
+        const img = document.createElement('img');
+        img.className = 'progress-photo-img';
+        img.src = photo.dataUrl;
+        img.alt = 'Progress photo';
+        card.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'progress-photo-placeholder';
+        ph.innerHTML = `
+          <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none" stroke="#6ee7b7" stroke-width="0.6">
+            <circle cx="50" cy="32" r="11"/>
+            <path d="M30 88 C 30 64, 40 50, 50 50 C 60 50, 70 64, 70 88"/>
+          </svg>
+        `;
+        card.appendChild(ph);
+      }
+
+      const overlay = document.createElement('div');
+      overlay.className = 'progress-photo-overlay';
+      card.appendChild(overlay);
+
+      const meta = document.createElement('div');
+      meta.className = 'progress-photo-meta';
+      meta.innerHTML = `<span class="photo-date">${photo.date}</span><span class="photo-weight">${photo.weight}</span>`;
+      card.appendChild(meta);
+
+      card.addEventListener('click', () => openViewer(photo.id));
+      return card;
+    }
+
+    function updatePhotoCount() {
+      const count = photos.length;
+      if (count === 0) {
+        progressLinkCount.textContent = '0 photos';
+      } else {
+        const latest = photos[photos.length - 1].date;
+        progressLinkCount.textContent = `${count} photo${count === 1 ? '' : 's'} · latest ${latest}`;
+      }
+    }
+
+    function ensureEmptyStateIfNone() {
+      if (photos.length === 0) {
+        if (!document.querySelector('.progress-empty')) {
+          const empty = document.createElement('div');
+          empty.className = 'progress-empty';
+          empty.textContent = 'No photos yet · tap Take Photo to start';
+          progressGrid.appendChild(empty);
+        }
+      } else {
+        const empty = document.querySelector('.progress-empty');
+        if (empty) empty.remove();
+      }
+    }
+
+    function addPhotoFromFile(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const { short, upper } = formatToday();
+        const newPhoto = {
+          id: nextId++,
+          date: short,
+          dateUpper: upper,
+          weight: getCurrentWeight(),
+          dataUrl: e.target.result
+        };
+        photos.push(newPhoto);
+        ensureEmptyStateIfNone();
+        progressGrid.appendChild(buildPhotoCard(newPhoto));
+        updatePhotoCount();
+        showToast('Photo added');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // -------------------- Weight edit/save --------------------
+    editBtn.addEventListener('click', () => {
+      lockedState.classList.add('hidden');
+      inputRow.classList.remove('hidden');
+      weightInput.focus();
+      weightInput.select();
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const newValue = parseFloat(weightInput.value);
+      if (!isNaN(newValue) && newValue > 0) {
+        weightNumEl.textContent = newValue.toFixed(1);
+        weightLockedValueEl.textContent = newValue.toFixed(1) + ' lbs';
+      }
+      inputRow.classList.add('hidden');
+      lockedState.classList.remove('hidden');
+    });
+
+    // -------------------- Progress overlay --------------------
+    progressLink.addEventListener('click', () => {
+      progressOverlay.classList.add('is-open');
+      progressOverlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    });
+
+    progressBack.addEventListener('click', () => {
+      progressOverlay.classList.remove('is-open');
+      progressOverlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    });
+
+    // -------------------- Take Photo / From Library --------------------
+    takePhotoBtn.addEventListener('click', () => cameraInput.click());
+    fromLibraryBtn.addEventListener('click', () => libraryInput.click());
+
+    cameraInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        addPhotoFromFile(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+
+    libraryInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        addPhotoFromFile(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+
+    // -------------------- Photo viewer --------------------
+    function openViewer(id) {
+      const photo = getPhoto(id);
+      if (!photo) return;
+      currentPhotoId = id;
+      renderPhotoMedia(photoViewerFrame, photo);
+      photoViewerDate.textContent = photo.dateUpper;
+      photoViewerWeight.textContent = photo.weight;
+      photoViewer.classList.add('is-open');
+      photoViewer.setAttribute('aria-hidden', 'false');
+      resetDeleteConfirm();
+    }
+
+    function closeViewer() {
+      photoViewer.classList.remove('is-open');
+      photoViewer.setAttribute('aria-hidden', 'true');
+      currentPhotoId = null;
+      resetDeleteConfirm();
+    }
+
+    function resetDeleteConfirm() {
+      deleteConfirm = false;
+      pvDelete.textContent = 'Delete';
+      pvDelete.classList.remove('is-confirm');
+      if (deleteConfirmTimeout) {
+        clearTimeout(deleteConfirmTimeout);
+        deleteConfirmTimeout = null;
+      }
+    }
+
+    // attach to existing seed card
+    document.querySelectorAll('.progress-photo-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.dataset.photoId;
+        if (id) openViewer(id);
+      });
+    });
+
+    pvClose.addEventListener('click', closeViewer);
+
+    pvDelete.addEventListener('click', () => {
+      if (!deleteConfirm) {
+        deleteConfirm = true;
+        pvDelete.textContent = 'Confirm delete?';
+        pvDelete.classList.add('is-confirm');
+        deleteConfirmTimeout = setTimeout(resetDeleteConfirm, 3000);
+        return;
+      }
+      const id = currentPhotoId;
+      const card = progressGrid.querySelector(`[data-photo-id="${id}"]`);
+      if (card) {
+        card.classList.add('is-removing');
+        setTimeout(() => {
+          card.remove();
+          const idx = photos.findIndex(p => String(p.id) === String(id));
+          if (idx > -1) photos.splice(idx, 1);
+          ensureEmptyStateIfNone();
+          updatePhotoCount();
+        }, 250);
+      }
+      closeViewer();
+    });
+
+    photoViewer.addEventListener('click', (e) => {
+      if (e.target === photoViewer || e.target.classList.contains('photo-viewer-stage')) {
+        closeViewer();
+      }
+    });
+
+    // -------------------- Compare --------------------
+    function renderCompareSlot(slotEl, photo) {
+      // remove any existing image or placeholder, keep meta
+      const meta = slotEl.querySelector('.compare-slot-meta');
+      slotEl.innerHTML = '';
+      if (photo && photo.dataUrl) {
+        const img = document.createElement('img');
+        img.src = photo.dataUrl;
+        img.alt = 'Progress photo';
+        slotEl.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'progress-photo-placeholder';
+        ph.style.opacity = '0.18';
+        ph.innerHTML = `
+          <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none" stroke="#6ee7b7" stroke-width="0.6">
+            <circle cx="50" cy="32" r="11"/>
+            <path d="M30 88 C 30 64, 40 50, 50 50 C 60 50, 70 64, 70 88"/>
+          </svg>
+        `;
+        slotEl.appendChild(ph);
+      }
+      slotEl.appendChild(meta);
+    }
+
+    function openCompare() {
+      if (photos.length < 2) {
+        showToast('Need 2+ photos to compare');
+        return;
+      }
+      const currentPhoto = getPhoto(currentPhotoId);
+      renderCompareSlot(compareSlotA, currentPhoto);
+      compareSlotADate.textContent = currentPhoto.dateUpper;
+      compareSlotAWeight.textContent = currentPhoto.weight;
+
+      // reset slot B
+      renderCompareSlot(compareSlotB, null);
+      compareSlotBDate.textContent = '—';
+      compareSlotBWeight.textContent = 'Pick photo';
+
+      // build picker
+      comparePickerGrid.innerHTML = '';
+      photos
+        .filter(p => String(p.id) !== String(currentPhotoId))
+        .forEach(p => {
+          const thumb = document.createElement('button');
+          thumb.className = 'compare-picker-thumb';
+          if (p.dataUrl) {
+            const img = document.createElement('img');
+            img.src = p.dataUrl;
+            img.alt = '';
+            thumb.appendChild(img);
+          } else {
+            const ph = document.createElement('div');
+            ph.className = 'progress-photo-placeholder';
+            ph.style.opacity = '0.3';
+            ph.innerHTML = `
+              <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none" stroke="#6ee7b7" stroke-width="0.6">
+                <circle cx="50" cy="32" r="11"/>
+                <path d="M30 88 C 30 64, 40 50, 50 50 C 60 50, 70 64, 70 88"/>
+              </svg>
+            `;
+            thumb.appendChild(ph);
+          }
+          const dateLabel = document.createElement('div');
+          dateLabel.className = 'compare-picker-thumb-date';
+          dateLabel.textContent = p.date;
+          thumb.appendChild(dateLabel);
+          thumb.addEventListener('click', () => {
+            renderCompareSlot(compareSlotB, p);
+            compareSlotBDate.textContent = p.dateUpper;
+            compareSlotBWeight.textContent = p.weight;
+            comparePicker.style.display = 'none';
+          });
+          comparePickerGrid.appendChild(thumb);
+        });
+
+      comparePicker.style.display = '';
+      compareView.classList.add('is-open');
+      compareView.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeCompare() {
+      compareView.classList.remove('is-open');
+      compareView.setAttribute('aria-hidden', 'true');
+    }
+
+    pvCompare.addEventListener('click', openCompare);
+    compareClose.addEventListener('click', closeCompare);
+
+    // initialize count
+    updatePhotoCount();
+  </script>
+
+</body>
+</html>
