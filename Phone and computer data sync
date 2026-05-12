@@ -1,0 +1,55 @@
+I have a single-file static dashboard (index.html) that I deploy to Netlify
+by drag-and-drop. It stores all its state in localStorage, so changes on my
+phone don't show up on my laptop and vice versa.
+
+Add cross-device sync using a Netlify Function backed by Netlify Blobs.
+IMPORTANT: drag-and-drop deploys do NOT run `npm install`, so the function
+MUST NOT import any npm packages. Talk to Netlify Blobs directly via the
+built-in fetch and the NETLIFY_BLOBS_CONTEXT env var.
+
+Requirements:
+
+1. Create `netlify/functions/store.mjs`:
+   - Zero npm dependencies. Use only Node built-ins (`fetch`, `Buffer`).
+   - Decode `process.env.NETLIFY_BLOBS_CONTEXT` (base64-encoded JSON
+     containing `siteID`, `token`, and `edgeURL`).
+   - Store everything under one blob: `${edgeURL}/${siteID}/site:dashboard/state`,
+     authenticated with `Authorization: Bearer ${token}`.
+   - GET returns the saved JSON (or `{}` if blob returns 404).
+   - PUT/POST accepts a JSON object, saves it, returns `{ok: true}`.
+   - Reject non-object bodies. Return JSON errors with detail on failure.
+   - Export `config = { path: '/.netlify/functions/store' };`.
+
+2. Create `netlify.toml` at the root:
+       [build]
+         publish = "."
+         functions = "netlify/functions"
+
+3. In index.html, immediately after the existing localStorage helpers,
+   add a cloud-sync layer that:
+   - Reads my code and figures out which localStorage key prefixes / exact
+     keys hold the data I want synced across devices. Skip anything that
+     looks device-local (API keys, secrets, transient UI prefs).
+   - Pulls from `/.netlify/functions/store` once on load, applies to
+     localStorage, and re-renders.
+   - Pushes the full synced state on every change, debounced ~300ms.
+   - Polls every 5 seconds AND on window `focus` AND on `visibilitychange`
+     (when visible), re-rendering if anything differs.
+   - While the user is editing a field (active INPUT, TEXTAREA, or
+     `contenteditable=true`), queues incoming remote state in a
+     `pendingRemote` variable and applies it on `focusout` so typing
+     isn't wiped.
+   - First-launch seed: if remote is empty but local has data, pushes
+     local up instead of overwriting it.
+   - Last-write-wins per key. No per-item merging.
+   - Hooks into the existing storeSet/storeDelete (or equivalent) so any
+     write to a synced key triggers the debounced push.
+
+4. Do NOT add a package.json. The function uses zero npm packages.
+
+5. When done, tell me exactly how to deploy: I drag the WHOLE folder onto
+   Netlify's Deploys page (not just index.html), then hard-refresh both
+   devices. Verify by visiting
+   `https://MY-SITE.netlify.app/.netlify/functions/store` — it should
+   return `{}` (or saved data), never a crash page.
+
